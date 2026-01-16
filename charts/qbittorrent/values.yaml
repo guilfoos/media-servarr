@@ -1,0 +1,94 @@
+# Default library values
+nameOverride: ''
+fullnameOverride: ''
+
+#
+# Secrets to create
+#
+secrets:
+  - name: 'privatekey'
+    value: ''
+  - name: 'address'
+    value: ''
+  - name: 'publickey'
+    value: ''
+  - name: 'presharedkey'
+    value: ''
+  - name: 'endpoint'
+    value: ''
+
+#
+# Application Config
+#
+application:
+  # Main application web UI port
+  port: 8080
+  # Access url base
+  urlBase: 'qbittorrent'
+  # ConfigMap for core application settings
+  config:
+    # Filename of configuration
+    filename: 'wg0.conf'
+    # Configuration file contents
+    contents: |
+      [Interface]
+      PrivateKey = $privatekey
+      Address = $address
+      DNS = 1.1.1.1
+
+
+      [Peer]
+      PublicKey = $publickey
+      PresharedKey = $presharedkey
+      AllowedIPs = 0.0.0.0/0, ::/0
+      PersistentKeepalive = 0
+      Endpoint = $endpoint
+    # Secrets to inject - if any - to the config. In the config they must be defined as $secret
+    secrets: [ 'privatekey', 'address', 'publickey', 'presharedkey', 'endpoint' ]
+    # Path the file will be mounted to in the config
+    mountPath: '/config/wireguard/wg0.conf'
+
+#
+# Resource - DEPLOYMENT
+# This is to set up and define the application deployment
+#
+deployment:
+  container:
+    image:
+      repository: 'tenseiken/qbittorrent-wireguard'
+
+    env:
+      - name: 'QBT_LEGAL_NOTICE'
+        value: 'confirm' # Do not change!
+      - name: 'LAN_NETWORK'
+        value: '192.168.0.0/24'
+      - name: 'PGID'
+        value: '1000'
+      - name: 'PUID'
+        value: '1000'
+      - name: 'WEBUI_URL'
+        value: 'http://media-servarr.local/qbittorrent'
+      - name: 'WEBUI_USER'
+        value: 'admin'
+      - name: 'WEBUI_PASS'
+        value: 'adminadmin'
+
+    # Additional volumeMounts on the output Deployment definition.
+    volumeMounts:
+      - name: 'downloads'
+        mountPath: '/downloads'
+
+  volumes:
+    downloads:
+
+  podSecurityContext:
+    capabilities:
+      add:
+      - NET_ADMIN
+      - SYS_MODULE
+
+ingress:
+  enabled: true
+
+metrics:
+  enabled: false #no metrics collection
