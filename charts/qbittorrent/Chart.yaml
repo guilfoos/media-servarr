@@ -14,7 +14,7 @@ keywords:
 kubeversion: ">=1.24.0-0"
 type: 'application'
 version: 0.1.0
-appVersion: 5.1.4-1
+appVersion: 5.1.4
 icon: 'https://github.com/drinkataco/media-servarr/blob/main/charts/qbittorrent/icon.png'
 dependencies:
   - name: 'media-servarr-base'
