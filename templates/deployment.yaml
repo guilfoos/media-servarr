@@ -73,7 +73,7 @@ spec:
               {{- if gt (len (default list .secrets)) 0 }}
               sed \
                 {{- range .secrets }}
-                -e "s/\${{ . }}/${{ . }}/g" \
+                -e "s@\${{ . }}@${{ . }}@g" \
                 {{- end }}
                 '/config-map/{{ .filename }}' > \
                 '/config-processed/{{ .filename }}'
