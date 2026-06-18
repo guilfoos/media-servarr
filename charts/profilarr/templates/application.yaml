@@ -3,3 +3,4 @@
 
 {{/* Run templater */}}
 {{ include "media-servarr-base.template" . }}
+

@@ -1,19 +1,17 @@
-# Huntarr Helm Chart
+# Profilarr Helm Chart
 
-This Helm chart installs Huntarr, a companion application for [Radarr](../radarr/), [Lidarr](../lidarr/), and [Sonarr](../sonarr/) to search for quality upgrades.
+This Helm chart installs Profilarr, a configuration management platform for Radarr and Sonarr, in a Kubernetes cluster.
 
 This README covers the basics of customising and installation
 
-![Huntarr](./icon.png)
+![Profilarr](./icon.png)
 
 <!-- vim-md-toc format=bullets ignore=^TODO$ -->
 * [Installation](#installation)
 * [Configuration](#configuration)
-  * [Secrets](#secrets)
   * [Application Configuration](#application-configuration)
   * [Volumes](#volumes)
   * [Ingress](#ingress)
-  * [Metrics](#metrics)
   * [Advanced](#advanced)
 * [Upgrading](#upgrading)
 * [Uninstallation](#uninstallation)
@@ -27,10 +25,10 @@ Install this helm chart using the following command:
 ```bash
 helm repo add mediar-servarr https://media-servarr.shw.al/charts
 
-helm install huntarr media-servarr/huntarr
+helm install profilarr media-servarr/profilarr
 ```
 
-Pointing the host `media-servarr.local` to your kubernetes cluster will then allow you to access the application at the default location of `http://media-servarr.local/huntarr/`
+By default, this chart exposes Profilarr at `http://profilarr.local/`
 
 ## Configuration
 
@@ -38,30 +36,41 @@ Here is some example of some configuration you may want to override (and include
 
 ### Application Configuration
 
-Application configuration is managed via the GUI and stored in the application database.
+Profilarr is configured primarily through environment variables. The upstream quick-start only requires a `/config` volume and port `6868`.
+
+```yaml
+application:
+  port: 6868
+
+deployment:
+  container:
+    env:
+      - name: 'TZ'
+        value: 'UTC'
+```
 
 ### Volumes
 
-A volume is included just for configuration:
+One volume is available by default:
 
-- **config** - General config data, where the sqlite database exists, for example
+- **config** - Profilarr configuration, database, and git working data
 
 ```yaml
 deployment:
   ...
   volumes:
-    config: # The key will be the volume name
+    config:
       persistentVolumeClaim:
-        name: 'huntarr-config'
+        claimName: 'profilarr-config'
 ```
 
-By default, a PersistentVolumeClaim will be provisioned for the `config` named `huntarr-config`.
+By default, a PersistentVolumeClaim will be provisioned for `config` unless otherwise specified in your `values.yaml`
 
 ```yaml
 persistentVolumeClaims:
-  cleanuparr-config:
+  profilarr-config:
     accessMode: 'ReadWriteOnce'
-    requestStorage: '1Gi'
+    requestStorage: '5Gi'
     storageClassName: 'manual'
     selector:
       matchLabels:
@@ -70,25 +79,22 @@ persistentVolumeClaims:
 
 ### Ingress
 
-Ingress can be enabled, and you can customise the default host, path, and TLS settings:
+Profilarr is best exposed on a dedicated host at `/`, rather than under a shared path prefix. Upstream still has an open request for custom host/port binding support, so this chart defaults to a dedicated host and root path.
 
 ```yaml
 ingress:
   enabled: true
-  host: 'example.com'
+  host: 'profilarr.example.com'
+  path: '/'
   tls:
     # Your TLS settings...
 ```
-
-### Metrics
-
-Metrics are not supported for this application.
 
 ### Advanced
 
 Other supported deployment configuration include `deployment.nodeSelector`, `deployment.tolerations`, and `deployment.affinity`
 
-You can also adjust container ports, environment variables (such as adding `PGID` and `PUID`) and define a `serviceAccount`.
+You can also adjust container ports, environment variables, and define a `serviceAccount`.
 
 Have a look at the parent charts default `values.yaml` for a comprehensive list of available config.
 
@@ -97,17 +103,18 @@ Have a look at the parent charts default `values.yaml` for a comprehensive list 
 To upgrade the deployment:
 
 ```bash
-helm upgrade huntarr media-servarr/huntarr -f myvalues.yaml
+helm upgrade profilarr media-servarr/profilarr -f myvalues.yaml
 ```
 
 ## Uninstallation
 
-To uninstall/delete the `huntarr` deployment:
+To uninstall/delete the `profilarr` deployment:
 
 ```bash
-helm uninstall huntarr
+helm uninstall profilarr
 ```
 
 ## Support
 
 For support, issues, or feature requests, please file an issue on the chart's repository issue tracker.
+

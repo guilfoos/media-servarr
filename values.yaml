@@ -6,8 +6,10 @@ fullnameOverride: ''
 # Secrets to create
 #
 secrets: []
+  # # inline value
   # - name: 'apiKey'
   #   value: 'e71e2f1da39e4918ba0a9c5355166268'
+  #   # ref: 'my-existing-secret' # existing secret
 
 #
 # Application Config
@@ -123,6 +125,7 @@ deployment:
 
 persistentVolumeClaims: {}
   # app-config:
+  #   name: 'my-config-pvc' # optional, uses key name by default
   #   accessMode: 'ReadWriteOnce'
   #   requestStorage: '1Gi'
   #   storageClassName: 'manual'
@@ -143,6 +146,8 @@ serviceAccount:
 
 service:
   type: 'ClusterIP'
+  annotations: {}
+    # example-annotation: "something"
   ports:
     - port: # by default uses application.port
       targetPort: 'http'
@@ -167,6 +172,10 @@ ingress:
 # For radarr, sonarr, readarr, lidarr
 metrics:
   enabled: false
+  # # Optional: point Exportarr at a different Secret/key instead of the chart secret `apiKey`.
+  # apiref:
+  #   secret: 'my-existing-secret'
+  #   keyname: 'apiKey'
   app: # Application to set up metrics for
   name: 'exportarr'
   image:

@@ -7,10 +7,9 @@ fullnameOverride: ''
 #
 application:
   # Main application web UI port
-  port: 9705
-  # Access url base
-  urlBase: 'huntarr'
-  config: null
+  port: 6868
+  # Profilarr is best exposed at root on a dedicated host
+  urlBase: ''
 
 #
 # Resource - DEPLOYMENT
@@ -19,17 +18,16 @@ application:
 deployment:
   container:
     image:
-      repository: 'ghcr.io/plexguide/huntarr'
+      repository: 'santiagosayshey/profilarr'
 
     env:
-      - name: 'PGID'
-        value: '1000'
-      - name: 'PUID'
-        value: '1000'
       - name: 'TZ'
-        value: 'America/New_York'
+        value: 'UTC'
+      # Set AUTH to 'off' or 'oidc' to use a different authentication mode.
+      # Consult the Profilarr docs for the required configuration when not using the default.
+      - name: 'AUTH'
+        value: 'on'
 
-    # Additional volumeMounts on the output Deployment definition.
     volumeMounts:
       - name: 'config'
         mountPath: '/config'
@@ -37,14 +35,15 @@ deployment:
   volumes:
     config:
       persistentVolumeClaim:
-        claimName: 'huntarr-config'
+        claimName: 'profilarr-config'
 
 persistentVolumeClaims:
-  huntarr-config:
+  profilarr-config:
     accessMode: 'ReadWriteOnce'
-    requestStorage: '1Gi'
+    requestStorage: '5Gi'
     selector: {}
 
 ingress:
   enabled: true
-
+  host: 'profilarr.local'
+  path: '/'

@@ -2,6 +2,7 @@
 {{- $context := . }}
 {{/* Set application config object to map */}}
 {{- $config := .Values.application.config }}
+{{- $conf_secrets := .Values.secrets }}
 {{- if and $config (ne (kindOf $config) "slice") }}
   {{- $config = list $config }}
 {{- end -}}
@@ -54,12 +55,20 @@ spec:
           env:
             {{- range $config }}
               {{- if .secrets }}
-                {{- range .secrets }}
-            - name: '{{ . }}'
+                {{- range $name := .secrets }}
+            - name: '{{ $name }}'
               valueFrom:
                 secretKeyRef:
+                {{- range $element := $conf_secrets }}
+                  {{- if eq $element.name $name }}
+                    {{- if $element.value }}
                   name: '{{ include "media-servarr-base.fullname" $context }}'
-                  key: '{{ . }}'
+                    {{- else }}
+                  name: '{{ $element.ref }}'
+                    {{- end }}
+                  {{- end }}
+                {{- end }}
+                  key: '{{ $name }}'
                 {{- end }}
               {{- end }}
             {{- end }}
@@ -141,8 +150,13 @@ spec:
             - name: 'APIKEY'
               valueFrom:
                 secretKeyRef:
+                  {{- if .Values.metrics.apiref }}
+                  name: '{{ .Values.metrics.apiref.secret }}'
+                  key: '{{ .Values.metrics.apiref.keyname }}'
+                  {{- else }}
                   name: '{{ include "media-servarr-base.fullname" . }}'
-                  key: 'apiKey'
+                  key: '{{ "apiKey" }}'
+                  {{- end }}
             {{- if .Values.metrics.env }}
             {{ toYaml .Values.metrics.env | nindent 12 }}
             {{- end }}
@@ -170,7 +184,20 @@ spec:
         {{- range $key, $value := .Values.deployment.volumes }}
         - name: '{{ $key }}'
           {{- $volume := default (dict "emptyDir" dict) $value }}
+          {{- $pvc := get $volume "persistentVolumeClaim" }}
+          {{- if $pvc }}
+          {{- $pvcConfig := deepCopy $pvc }}
+          {{- $pvcKey := (get $pvcConfig "claimName") | default $key }}
+          {{- $claimName := $pvcKey }}
+          {{- if hasKey $context.Values.persistentVolumeClaims $pvcKey }}
+          {{- $claimName = (get (index $context.Values.persistentVolumeClaims $pvcKey) "name") | default $pvcKey }}
+          {{- end }}
+          {{- $_ := set $pvcConfig "claimName" $claimName }}
+          persistentVolumeClaim:
+            {{- toYaml $pvcConfig | nindent 12 }}
+          {{- else }}
           {{- toYaml $volume | nindent 10 }}
+          {{- end }}
         {{- end }}
         {{- if $config }}
         - name: 'config-map'
