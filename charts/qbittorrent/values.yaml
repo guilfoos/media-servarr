@@ -62,6 +62,12 @@ deployment:
     image:
       repository: 'tenseiken/qbittorrent-wireguard'
 
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - SYS_MODULE
+
     env:
       - name: 'QBT_LEGAL_NOTICE'
         value: 'confirm' # Do not change!
@@ -85,12 +91,6 @@ deployment:
 
   volumes:
     downloads:
-
-  podSecurityContext:
-    capabilities:
-      add:
-      - NET_ADMIN
-      - SYS_MODULE
 
 ingress:
   enabled: true
