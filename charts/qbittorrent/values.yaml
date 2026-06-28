@@ -66,13 +66,12 @@ deployment:
       capabilities:
         add:
         - NET_ADMIN
-        - SYS_MODULE
 
     env:
       - name: 'QBT_LEGAL_NOTICE'
         value: 'confirm' # Do not change!
       - name: 'LAN_NETWORK'
-        value: '192.168.0.0/24'
+        value: '10.42.0.0/16'
       - name: 'PGID'
         value: '1000'
       - name: 'PUID'
