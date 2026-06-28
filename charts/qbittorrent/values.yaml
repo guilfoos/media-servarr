@@ -86,11 +86,11 @@ deployment:
   volumes:
     downloads:
 
-  # podSecurityContext:
-  #   capabilities:
-  #     add:
-  #     - NET_ADMIN
-  #     - SYS_MODULE
+  podSecurityContext:
+    capabilities:
+      add:
+      - NET_ADMIN
+      - SYS_MODULE
 
 ingress:
   enabled: true
