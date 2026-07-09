@@ -100,7 +100,7 @@ deployment:
         path: '/srv/media/tv/'
 ```
 
-By default, a PersistentVolumeClaim will be provisioned for the `config`, but `emptyDir: {}` will be used for downloads, and tv, unless otherwise specified in your `values.yaml`
+By default, a PersistentVolumeClaim will be provisioned for the `config`, but `emptyDir: {}` will be used for downloads unless otherwise specified in your `values.yaml`
 
 ```yaml
 persistentVolumeClaims:
@@ -112,6 +112,8 @@ persistentVolumeClaims:
       matchLabels:
         type: 'local'
 ```
+
+Qbittorrent is configured to use '/downloads' as the location - you may need to adjust the application settings or path mapping to get this working with your *arr stack.
 
 ### Ingress
 
