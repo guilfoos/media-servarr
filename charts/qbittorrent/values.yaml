@@ -63,6 +63,7 @@ deployment:
       repository: 'tenseiken/qbittorrent-wireguard'
 
     securityContext:
+      privileged: true
       capabilities:
         add:
         - NET_ADMIN
