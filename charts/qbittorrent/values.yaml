@@ -63,6 +63,13 @@ deployment:
       repository: 'tenseiken/qbittorrent-wireguard'
 
     securityContext:
+      sysctls:
+        - name: net.ipv4.conf.all.rp_filter
+          value: "2"
+        - name: net.ipv4.conf.all.src_valid_mark
+          value: "1"
+        - name: net.ipv6.conf.all.disable_ipv6
+          value: "1"
       privileged: true
       capabilities:
         add:
@@ -88,18 +95,15 @@ deployment:
     volumeMounts:
       - name: 'downloads'
         mountPath: '/downloads'
+      # - name: wg-conf
+      #   mountPath: /config/wireguard/wg0.conf
+      #   readOnly: true
 
   volumes:
     downloads:
-
-podSecurityContext:
-  sysctls:
-    - name: net.ipv4.conf.all.rp_filter
-      value: "2"
-    - name: net.ipv4.conf.all.src_valid_mark
-      value: "1"
-    - name: net.ipv6.conf.all.disable_ipv6
-      value: "1"
+    # wg-conf:
+    #   secret:
+    #     secretName: wg-conf
 
 ingress:
   enabled: true
