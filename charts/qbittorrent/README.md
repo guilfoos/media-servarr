@@ -32,21 +32,31 @@ helm install qbittorrent media-servarr/qbittorrent
 
 Pointing the host `media-servarr.local` to your kubernetes cluster will then allow you to access the application at the default location of `http://media-servarr.local/qbittorrent/`
 
+Note that running a Wireguard client in kubernetes will require the chart to set the `net.ipv4.conf.all.src_valid_mark` sysctl for the deployment. You must use `allowed-unsafe-sysctls` on your kubelets to allow this in your kubernetes environment.
+
 ## Configuration
 
-Here is some example of some configuration you may want to override (and include in installation with `-f myvalues.yaml`
+Here is some example of some configuration you may want to override and include in installation with `-f myvalues.yaml`
 
 ### Secrets
 
-To set up secrets, like API keys, use the following format. Use `openssl rand -hex 16` to generate a key and replace the default value.
+To set up secrets use the following format. Your Wireguard configuration may require the following items, which are all supported in the default chart config.
 
 ```yaml
 secrets:
-  - name: 'apiKey'
-    value: 'your-api-key-here'
+  - name: 'privatekey'
+    value: ''
+  - name: 'address'
+    value: ''
+  - name: 'publickey'
+    value: ''
+  - name: 'presharedkey'
+    value: ''
+  - name: 'endpoint'
+    value: ''
+  - name: 'dns'
+    value: ''
 ```
-
-By not setting this value, and leaving it blank, sonarr will automatically generate a key on start.
 
 ### Application Configuration
 
@@ -54,17 +64,28 @@ By default, base configuration is defined using a ConfigMap - defined by default
 
 ```yaml
 application:
-  port: 8989 # default UI port
-  urlBase: 'sonarr' # default web base path
+  # Main application web UI port
+  port: 8080
+  # Access url base
+  urlBase: 'qbittorrent'
+  # ConfigMap for core application settings
   config:
+    # Filename of configuration
+    filename: 'wg0.conf'
+    # Configuration file contents
     contents: |
-      <Config>
-        ...
-        <UrlBase>sonarr</UrlBase>
-        <ApiKey>$apiKey</ApiKey>
-        <Port>8989</Port>
-        ...
-      </Config>
+      [Interface]
+      PrivateKey = $privatekey
+      Address = $address
+      DNS = $dns
+
+
+      [Peer]
+      PublicKey = $publickey
+      PresharedKey = $presharedkey
+      AllowedIPs = 0.0.0.0/0, ::/0
+      PersistentKeepalive = 0
+      Endpoint = $endpoint
 ```
 
 You can prevent a ConfigMap being create and the configuration being managed as a kubernetes resource by defing the config as null. For example;
@@ -75,13 +96,35 @@ application:
   config: null
 ```
 
+There are some environment variables that are required as well. These are set to the defaults below, but you may want to update these to suit your environment.
+
+```yaml
+    env:
+      - name: 'QBT_LEGAL_NOTICE'
+        value: 'confirm' # Do not change!
+      - name: 'LAN_NETWORK'
+        value: '10.42.0.0/16'
+      - name: 'PGID'
+        value: '1000'
+      - name: 'PUID'
+        value: '1000'
+      - name: 'WEBUI_URL'
+        value: 'http://media-servarr.local/qbittorrent'
+      - name: 'WEBUI_USER'
+        value: 'admin'
+      - name: 'WEBUI_PASS'
+        value: 'adminadmin'
+```
+More configuration options for the container are available at https://github.com/tenseiken/docker-qbittorrent-wireguard/wiki
+
+You will also want to verify that the PUID and PGID are appropriate, and that `wg0` is the interface being used by Qbittorrent in "Settings > Advanced".
+
 ### Volumes
 
-Three volumes are available by default:
+Two volumes are available by default:
 
 - **config** - General config data, where the sqlite database exists, for example
-- **downloads** - Downloads folder for monitoring
-- **tv** - Location of TV
+- **downloads** - Downloads folder
 
 ```yaml
 deployment:
@@ -89,22 +132,18 @@ deployment:
   volumes:
     config: # The key will be the volume name
       persistentVolumeClaim:
-        name: 'sonarr-config'
+        name: 'qbittorrent-config'
     downloads:
       nfs:
         server: 'fileserver.local'
-        path: '/srv/downloads/'
-    tv:
-      nfs:
-        server: 'fileserver.local'
-        path: '/srv/media/tv/'
+        path: '/downloads/'
 ```
 
 By default, a PersistentVolumeClaim will be provisioned for the `config`, but `emptyDir: {}` will be used for downloads unless otherwise specified in your `values.yaml`
 
 ```yaml
 persistentVolumeClaims:
-  sonarr-config:
+  qbittorrent-config:
     accessMode: 'ReadWriteOnce'
     requestStorage: '1Gi'
     storageClassName: 'manual'
@@ -129,17 +168,12 @@ ingress:
 
 ### Metrics
 
-Enabling metrics enables a sidecar container being attached for [exportarr](https://github.com/onedr0p/exportarr/) - and a ServiceMonitor CRD to be consumed by the [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus) package.
+Metrics are not available for this chart.
 
 ```yaml
 metrics:
-  enabled: true
-  env: []
+  enabled: false
 ```
-
-It is recommended to install [kube-prometheus chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) first for the CRD to be supported. It is not included as a dependency by default in this package!
-
-Unless changed with `metrics.port.number` you can then consume metrics over port `9706`.
 
 ### Advanced
 
@@ -149,20 +183,66 @@ You can also adjust container ports, environment variables (such as adding `PGID
 
 Have a look at the parent charts default `values.yaml` for a comprehensive list of available config.
 
+### Alternate Wireguard configuration method
+
+Create a secret - either in the values.yaml or directly in kubernetes - to hold the configuration.
+
+```yaml
+secrets:
+  - name: 'wg-conf'
+    value: |
+      [Interface]
+      PrivateKey = privatekey
+      Address = 1.2.3.4/16
+      DNS = 1.1.1.1, 8.8.8.8
+
+
+      [Peer]
+      PublicKey = publickey
+      PresharedKey = presharedkey
+      AllowedIPs = 0.0.0.0/0, ::/0
+      PersistentKeepalive = 0
+      Endpoint = endpoint
+```
+
+Add a volume for the Wireguard config.
+
+```yaml
+  volumes:
+    wg-conf:
+      secret:
+        secretName: wg-conf
+```
+
+Modify the volume mounts to mount that secret read-only in the pod.
+
+```yaml
+    volumeMounts:
+      - name: 'config'
+        mountPath: '/config'
+      - name: 'downloads'
+        mountPath: '/downloads'
+      - name: wg-conf
+        mountPath: /config/wireguard/wg0.conf
+        readOnly: true
+```
+
+Finally, be sure to set `config:` to null. This is functionally very similar in outcome to the default method of managing your configuration secrets, as it ensures the Wireguard configuration details don't end up directly in kubernetes deployment manifests.
+
 ## Upgrading
 
 To upgrade the deployment:
 
 ```bash
-helm upgrade sonarr media-servarr/sonarr -f myvalues.yaml
+helm upgrade qbittorrent media-servarr/qbittorrent -f myvalues.yaml
 ```
 
 ## Uninstallation
 
-To uninstall/delete the `sonarr` deployment:
+To uninstall/delete the `qbittorrent` deployment:
 
 ```bash
-helm uninstall sonarr
+helm uninstall qbittorrent
 ```
 
 ## Support

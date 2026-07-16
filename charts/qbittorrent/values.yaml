@@ -16,6 +16,8 @@ secrets:
     value: ''
   - name: 'endpoint'
     value: ''
+  - name: 'dns'
+    value: ''
 
 #
 # Application Config
@@ -34,7 +36,7 @@ application:
       [Interface]
       PrivateKey = $privatekey
       Address = $address
-      DNS = 1.1.1.1
+      DNS = $dns
 
 
       [Peer]
@@ -50,6 +52,7 @@ application:
       - 'publickey'
       - 'presharedkey'
       - 'endpoint'
+      - 'dns'
     # Path the file will be mounted to in the config
     mountPath: '/config/wireguard/wg0.conf'
 
@@ -86,6 +89,8 @@ deployment:
 
     # Additional volumeMounts on the output Deployment definition.
     volumeMounts:
+      - name: 'config'
+        mountPath: '/config'
       - name: 'downloads'
         mountPath: '/downloads'
       # - name: wg-conf
@@ -93,6 +98,9 @@ deployment:
       #   readOnly: true
 
   volumes:
+    config:
+      persistentVolumeClaim:
+        claimName: 'qbittorrent-config'
     downloads:
     # wg-conf:
     #   secret:
@@ -100,12 +108,8 @@ deployment:
 
   podSecurityContext:
     sysctls:
-      # - name: net.ipv4.conf.all.rp_filter
-      #   value: "2"
       - name: net.ipv4.conf.all.src_valid_mark
         value: "1"
-      # - name: net.ipv6.conf.all.disable_ipv6
-      #   value: "1"
 
 ingress:
   enabled: true
