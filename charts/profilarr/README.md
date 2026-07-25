@@ -10,8 +10,10 @@ This README covers the basics of customising and installation
 * [Installation](#installation)
 * [Configuration](#configuration)
   * [Application Configuration](#application-configuration)
+  * [Authentication](#authentication)
   * [Volumes](#volumes)
   * [Ingress](#ingress)
+  * [Parser Sidecar (optional)](#parser-sidecar-optional)
   * [Advanced](#advanced)
 * [Upgrading](#upgrading)
 * [Uninstallation](#uninstallation)
@@ -48,6 +50,20 @@ deployment:
       - name: 'TZ'
         value: 'UTC'
 ```
+
+### Authentication
+
+Profilarr v2 supports three auth modes via the `AUTH` env var:
+
+- `on` (default) — password auth managed inside Profilarr.
+- `off` — no auth. Only use on trusted networks or behind a proxy that authenticates for you.
+- `oidc` — OpenID Connect via an external identity provider.
+
+For OIDC, set `AUTH=oidc`, provide the three OIDC vars, and set `ORIGIN` to your public URL. Profilarr expects the redirect URL at `{ORIGIN}/auth/oidc/callback` — most IdPs infer this automatically.
+
+Because `OIDC_CLIENT_SECRET` is sensitive, define it in the chart's `secrets:` block (or point at an existing Kubernetes Secret via `ref`) and bind it in `deployment.container.env` with `valueFrom.secretKeyRef`. Commented examples for both are in the chart's default `values.yaml`.
+
+You can also set `PROFILARR_API_KEY` (min 32 characters) the same way — when set it overrides the stored database key for `X-Api-Key` auth without being persisted to SQLite.
 
 ### Volumes
 
@@ -90,6 +106,25 @@ ingress:
   tls:
     # Your TLS settings...
 ```
+
+### Parser Sidecar (optional)
+
+Custom-format and quality-profile *testing* — the screens where Profilarr checks a release name against your formats or simulates how a profile would score a release — is powered by a separate C# service that mirrors Radarr/Sonarr's own parsing logic. Every other feature (linking databases, building profiles, syncing to your arr instances, upgrade automation, notifications) works without it.
+
+To enable, run the parser as a sidecar in the same Pod, listening on port `5000`:
+
+```yaml
+deployment:
+  sideCarContainers:
+    - name: 'parser'
+      image: 'ghcr.io/dictionarry-hub/profilarr-parser:v2.0.9'
+      ports:
+        - containerPort: 5000
+          name: 'parser'
+          protocol: 'TCP'
+```
+
+Pin the parser tag to the same version as Profilarr — they release together. Because the sidecar shares the Pod network, Profilarr reaches it on `localhost:5000` (its default), so no extra `PARSER_HOST` / `PARSER_PORT` env vars are needed.
 
 ### Advanced
 

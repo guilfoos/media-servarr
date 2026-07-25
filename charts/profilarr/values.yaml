@@ -82,6 +82,18 @@ deployment:
       - name: 'config'
         mountPath: '/config'
 
+  # # Optional: run the profilarr-parser sidecar to enable custom-format and
+  # # quality-profile testing in the UI. Pin the tag to match profilarr's
+  # # appVersion — they release together. Profilarr connects to localhost:5000
+  # # by default (shared Pod network), so no extra env vars are needed.
+  # sideCarContainers:
+  #   - name: 'parser'
+  #     image: 'ghcr.io/dictionarry-hub/profilarr-parser:v2.0.9'
+  #     ports:
+  #       - containerPort: 5000
+  #         name: 'parser'
+  #         protocol: 'TCP'
+
   volumes:
     config:
       persistentVolumeClaim:
