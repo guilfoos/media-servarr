@@ -4,12 +4,26 @@ nameOverride: ''
 fullnameOverride: ''
 
 #
+# Secrets to create
+#
+# Profilarr uses env vars (not a config file), so unlike the arr charts the base
+# chart cannot auto-inject these — a matching valueFrom.secretKeyRef entry in
+# deployment.container.env below is also needed. See the commented
+# PROFILARR_API_KEY example there.
+secrets: []
+  # # PROFILARR_API_KEY must be at least 32 characters. When set it overrides
+  # # the stored database key without being persisted to SQLite. Optional.
+  # - name: 'PROFILARR_API_KEY'
+  #   value: 'replace-with-a-random-string-of-at-least-32-chars'
+  #   # ref: 'my-existing-secret' # alternatively point at an existing K8s Secret
+
+#
 # Application Config
 #
 application:
   # Main application web UI port
   port: 6868
-  # Profilarr is best exposed at root on a dedicated host
+  # Profilarr does not support urlBase
   urlBase: ''
 
 #
@@ -22,12 +36,28 @@ deployment:
       repository: 'ghcr.io/dictionarry-hub/profilarr'
 
     env:
+      - name: 'PUID'
+        value: '1000'
+      - name: 'PGID'
+        value: '1000'
       - name: 'TZ'
         value: 'UTC'
       # Set AUTH to 'off' or 'oidc' to use a different authentication mode.
       # Consult the Profilarr docs for the required configuration when not using the default.
       - name: 'AUTH'
         value: 'on'
+      # # Required when Profilarr sits behind a reverse proxy (and mandatory
+      # # for OIDC). Set to the public URL that reaches the app.
+      # - name: 'ORIGIN'
+      #   value: 'https://profilarr.example.com'
+      # # Uncomment together with an entry in `secrets:` above to pass the API
+      # # key to the container. `name` must match the Secret created by the
+      # # chart: `<release-name>-profilarr` (or your `fullnameOverride`).
+      # - name: 'PROFILARR_API_KEY'
+      #   valueFrom:
+      #     secretKeyRef:
+      #       name: 'release-name-profilarr'
+      #       key: 'PROFILARR_API_KEY'
 
     volumeMounts:
       - name: 'config'
