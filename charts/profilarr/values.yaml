@@ -19,7 +19,7 @@ application:
 deployment:
   container:
     image:
-      repository: 'santiagosayshey/profilarr'
+      repository: 'ghcr.io/dictionarry-hub/profilarr'
 
     env:
       - name: 'TZ'
