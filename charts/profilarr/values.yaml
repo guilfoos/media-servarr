@@ -16,6 +16,12 @@ secrets: []
   # - name: 'PROFILARR_API_KEY'
   #   value: 'replace-with-a-random-string-of-at-least-32-chars'
   #   # ref: 'my-existing-secret' # alternatively point at an existing K8s Secret
+  #
+  # # OIDC client secret. Required when AUTH=oidc. Keep this out of values.yaml
+  # # in production and use `ref` to point at a pre-existing Secret.
+  # - name: 'OIDC_CLIENT_SECRET'
+  #   value: ''
+  #   # ref: 'my-oidc-secret'
 
 #
 # Application Config
@@ -58,6 +64,19 @@ deployment:
       #     secretKeyRef:
       #       name: 'release-name-profilarr'
       #       key: 'PROFILARR_API_KEY'
+      #
+      # # OIDC authentication. Set AUTH=oidc above, provide the three vars
+      # # below, and ensure ORIGIN is set. Profilarr expects the redirect URL
+      # # at {ORIGIN}/auth/oidc/callback — most IdPs infer this automatically.
+      # - name: 'OIDC_CLIENT_ID'
+      #   value: 'your-client-id'
+      # - name: 'OIDC_DISCOVERY_URL'
+      #   value: 'https://your-idp.example.com/.well-known/openid-configuration'
+      # - name: 'OIDC_CLIENT_SECRET'
+      #   valueFrom:
+      #     secretKeyRef:
+      #       name: 'release-name-profilarr'
+      #       key: 'OIDC_CLIENT_SECRET'
 
     volumeMounts:
       - name: 'config'
