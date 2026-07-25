@@ -4,12 +4,32 @@ nameOverride: ''
 fullnameOverride: ''
 
 #
+# Secrets to create
+#
+# Profilarr uses env vars (not a config file), so unlike the arr charts the base
+# chart cannot auto-inject these — a matching valueFrom.secretKeyRef entry in
+# deployment.container.env below is also needed. See the commented
+# PROFILARR_API_KEY example there.
+secrets: []
+  # # PROFILARR_API_KEY must be at least 32 characters. When set it overrides
+  # # the stored database key without being persisted to SQLite. Optional.
+  # - name: 'PROFILARR_API_KEY'
+  #   value: 'replace-with-a-random-string-of-at-least-32-chars'
+  #   # ref: 'my-existing-secret' # alternatively point at an existing K8s Secret
+  #
+  # # OIDC client secret. Required when AUTH=oidc. Keep this out of values.yaml
+  # # in production and use `ref` to point at a pre-existing Secret.
+  # - name: 'OIDC_CLIENT_SECRET'
+  #   value: ''
+  #   # ref: 'my-oidc-secret'
+
+#
 # Application Config
 #
 application:
   # Main application web UI port
   port: 6868
-  # Profilarr is best exposed at root on a dedicated host
+  # Profilarr does not support urlBase
   urlBase: ''
 
 #
@@ -19,19 +39,60 @@ application:
 deployment:
   container:
     image:
-      repository: 'santiagosayshey/profilarr'
+      repository: 'ghcr.io/dictionarry-hub/profilarr'
 
     env:
+      - name: 'PUID'
+        value: '1000'
+      - name: 'PGID'
+        value: '1000'
       - name: 'TZ'
         value: 'UTC'
       # Set AUTH to 'off' or 'oidc' to use a different authentication mode.
       # Consult the Profilarr docs for the required configuration when not using the default.
       - name: 'AUTH'
         value: 'on'
+      # # Required when Profilarr sits behind a reverse proxy (and mandatory
+      # # for OIDC). Set to the public URL that reaches the app.
+      # - name: 'ORIGIN'
+      #   value: 'https://profilarr.example.com'
+      # # Uncomment together with an entry in `secrets:` above to pass the API
+      # # key to the container. `name` must match the Secret created by the
+      # # chart: `<release-name>-profilarr` (or your `fullnameOverride`).
+      # - name: 'PROFILARR_API_KEY'
+      #   valueFrom:
+      #     secretKeyRef:
+      #       name: 'release-name-profilarr'
+      #       key: 'PROFILARR_API_KEY'
+      #
+      # # OIDC authentication. Set AUTH=oidc above, provide the three vars
+      # # below, and ensure ORIGIN is set. Profilarr expects the redirect URL
+      # # at {ORIGIN}/auth/oidc/callback — most IdPs infer this automatically.
+      # - name: 'OIDC_CLIENT_ID'
+      #   value: 'your-client-id'
+      # - name: 'OIDC_DISCOVERY_URL'
+      #   value: 'https://your-idp.example.com/.well-known/openid-configuration'
+      # - name: 'OIDC_CLIENT_SECRET'
+      #   valueFrom:
+      #     secretKeyRef:
+      #       name: 'release-name-profilarr'
+      #       key: 'OIDC_CLIENT_SECRET'
 
     volumeMounts:
       - name: 'config'
         mountPath: '/config'
+
+  # # Optional: run the profilarr-parser sidecar to enable custom-format and
+  # # quality-profile testing in the UI. Pin the tag to match profilarr's
+  # # appVersion — they release together. Profilarr connects to localhost:5000
+  # # by default (shared Pod network), so no extra env vars are needed.
+  # sideCarContainers:
+  #   - name: 'parser'
+  #     image: 'ghcr.io/dictionarry-hub/profilarr-parser:v2.0.9'
+  #     ports:
+  #       - containerPort: 5000
+  #         name: 'parser'
+  #         protocol: 'TCP'
 
   volumes:
     config:
