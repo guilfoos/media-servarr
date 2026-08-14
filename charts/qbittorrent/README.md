@@ -189,7 +189,7 @@ Create a secret - either in the values.yaml or directly in kubernetes - to hold 
 
 ```yaml
 secrets:
-  - name: 'wg-conf'
+  - name: 'wg0.conf'
     value: |
       [Interface]
       PrivateKey = privatekey
@@ -208,22 +208,25 @@ secrets:
 Add a volume for the Wireguard config.
 
 ```yaml
+deployment:
   volumes:
     wg-conf:
       secret:
-        secretName: wg-conf
+        secretName: qbittorrent
 ```
 
 Modify the volume mounts to mount that secret read-only in the pod.
 
 ```yaml
+deployment:
+  container:
     volumeMounts:
       - name: 'config'
         mountPath: '/config'
       - name: 'downloads'
         mountPath: '/downloads'
       - name: wg-conf
-        mountPath: /config/wireguard/wg0.conf
+        mountPath: /config/wireguard
         readOnly: true
 ```
 
