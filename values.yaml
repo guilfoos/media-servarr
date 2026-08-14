@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=values.schema.json
 # Default library values
 nameOverride: ''
 fullnameOverride: ''
@@ -126,6 +127,7 @@ deployment:
 persistentVolumeClaims: {}
   # app-config:
   #   name: 'my-config-pvc' # optional, uses key name by default
+  #   volumeName: 'existing-pv-name' # optional, binds this claim to a specific PV
   #   accessMode: 'ReadWriteOnce'
   #   requestStorage: '1Gi'
   #   storageClassName: 'manual'
@@ -146,6 +148,7 @@ serviceAccount:
 
 service:
   type: 'ClusterIP'
+  # externalTrafficPolicy: 'Local' # optional, only valid for NodePort/LoadBalancer services
   annotations: {}
     # example-annotation: "something"
   ports:
