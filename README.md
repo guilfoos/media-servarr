@@ -4,6 +4,9 @@
 [![Release](https://github.com/drinkataco/media-servarr/actions/workflows/release.yaml/badge.svg)](https://github.com/drinkataco/media-servarr/actions/workflows/release.yaml)
 [![App Update](https://github.com/drinkataco/media-servarr/actions/workflows/auto-update.yaml/badge.svg)](https://github.com/drinkataco/media-servarr/actions/workflows/auto-update.yaml)
 
+
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/media-servarr)](https://artifacthub.io/packages/search?repo=media-servarr)
+
 ![media-servarr](./icon.png)
 
 A collection of Helm charts for self-hosted media - primarily built around the [Servarr](https://wiki.servarr.com/) family of charts, with some complementary charts here and there.

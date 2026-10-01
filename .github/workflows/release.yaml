@@ -37,10 +37,21 @@ jobs:
       - name: 'Prepare packaging'
         run: |
           #!/bin/sh
+          # Bundle values.schema.json into each chart before chart-releaser packages them
+          make sync-schema
           # Fetch current index.yaml
           CR_INDEX_DIR=.cr-index
           mkdir "$CR_INDEX_DIR"
           make pre-fetch DIST="$CR_INDEX_DIR"
+
+      - name: 'Import signing key'
+        # Decodes the base64-encoded GPG private key into a binary keyring that
+        # chart-releaser passes to `helm package --sign`. Writes the passphrase
+        # to a temp file so CR_PASSPHRASE_FILE can consume it non-interactively.
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 -d > /tmp/secring.gpg
+          printf '%s' "${{ secrets.GPG_PASSPHRASE }}" > /tmp/passphrase
+          chmod 600 /tmp/secring.gpg /tmp/passphrase
 
       - name: 'Run chart-releaser'
         uses: 'helm/chart-releaser-action@v1.7.0'
@@ -50,12 +61,17 @@ jobs:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_GENERATE_RELEASE_NOTES: true
           CR_SKIP_EXISTING: true
+          CR_SIGN: 'true'
+          CR_KEY: "${{ secrets.GPG_KEYNAME }}"
+          CR_KEYRING: '/tmp/secring.gpg'
+          CR_PASSPHRASE_FILE: '/tmp/passphrase'
 
       - name: 'Move to upload path'
         run: |
           mkdir -p ./dist/charts
           mv .cr-release-packages/* ./dist/charts
           make pre-fetch && make index
+          cp artifacthub-repo.yml ./dist/charts/
           ls -R ./dist/
 
       - name: 'Upload Packaged Charts as Artifacts'
@@ -85,4 +101,4 @@ jobs:
           aws s3 cp ./dist/charts s3://media-servarr-helm-chart--mediaservarrhelmcharts3b-b6yezrsb3jje/charts --recursive
       - name: 'Invalidate CloudFront Distribution for index.yaml'
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/charts/index.yaml"
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/charts/index.yaml" "/charts/artifacthub-repo.yml"
