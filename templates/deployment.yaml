@@ -77,7 +77,7 @@ spec:
             - '-c'
             - |
               #!/bin/sh
-              # Inject secrets in config if set
+              # Inject secrets in config if set.
               # Secret values are pre-escaped so sed metacharacters (&, /, \)
               # in the replacement don't break the s/// command. See #343.
               {{- range $config }}
