@@ -83,7 +83,7 @@ application:
       [Peer]
       PublicKey = $publickey
       PresharedKey = $presharedkey
-      AllowedIPs = 0.0.0.0/0, ::/0
+      AllowedIPs = 0.0.0.0/0
       PersistentKeepalive = 0
       Endpoint = $endpoint
 ```
