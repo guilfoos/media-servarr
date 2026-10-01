@@ -183,54 +183,13 @@ You can also adjust container ports, environment variables (such as adding `PGID
 
 Have a look at the parent charts default `values.yaml` for a comprehensive list of available config.
 
-### Alternate Wireguard configuration method
+For advanced features of the underlying container, please see https://github.com/tenseiken/docker-qbittorrent-wireguard/wiki
 
-Create a secret - either in the values.yaml or directly in kubernetes - to hold the configuration.
+### Kubernetes Network Security Concerns
 
-```yaml
-secrets:
-  - name: 'wg0.conf'
-    value: |
-      [Interface]
-      PrivateKey = privatekey
-      Address = 1.2.3.4/16
-      DNS = 1.1.1.1, 8.8.8.8
+You will likely need to disable IPv6 for the VPN settings to work. There are several "unsafe" sysctls you will want to allow in your kubernetes cluster; review the kubernetes documentation for your particular flavor. The necessary sysctls are set in the default chart values.
 
-
-      [Peer]
-      PublicKey = publickey
-      PresharedKey = presharedkey
-      AllowedIPs = 0.0.0.0/0, ::/0
-      PersistentKeepalive = 0
-      Endpoint = endpoint
-```
-
-Add a volume for the Wireguard config.
-
-```yaml
-deployment:
-  volumes:
-    wg-conf:
-      secret:
-        secretName: qbittorrent
-```
-
-Modify the volume mounts to mount that secret read-only in the pod.
-
-```yaml
-deployment:
-  container:
-    volumeMounts:
-      - name: 'config'
-        mountPath: '/config'
-      - name: 'downloads'
-        mountPath: '/downloads'
-      - name: wg-conf
-        mountPath: /config/wireguard
-        readOnly: true
-```
-
-Finally, be sure to set `config:` to null. This is functionally very similar in outcome to the default method of managing your configuration secrets, as it ensures the Wireguard configuration details don't end up directly in kubernetes deployment manifests.
+`allowed-unsafe-sysctls=net.ipv4.conf.all.src_valid_mark,net.ipv6.conf.all.disable_ipv6`
 
 ## Upgrading
 
